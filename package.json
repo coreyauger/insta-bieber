@@ -1,0 +1,28 @@
+{
+  "name": "@coreyauger/insta-bieber",
+  "version": "0.1.6",
+  "description": "Pump your Instagram to Beiber levels",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "author": {
+    "name": "coreyauger"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./dist/index.js",
+    "lint": "eslint src/**/*.ts",
+    "container:build": "docker build . -t coreyauger/lovebomb-cloudrun-instagram:$npm_package_version",
+    "container:push": "docker push coreyauger/lovebomb-cloudrun-instagram:$npm_package_version"
+  },
+  "dependencies": {
+    "dotenv": "^9.0.2",
+    "instagram-web-api": "^2.2.2",
+    "rxjs": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^16.7.1",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "eslint": "^7.24.0",
+    "typescript": "^4.1.3"
+  }
+}
