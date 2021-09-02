@@ -11,18 +11,23 @@
     "build": "tsc",
     "start": "node ./dist/index.js",
     "lint": "eslint src/**/*.ts",
+    "unfollow": "npx playwright test tests/mass-unfollow.spec.ts --max-failures 3 --workers 1 --headed",
+    "harvest": "npx playwright test tests/harvest.spec.ts --max-failures 3 --workers 1 --headed",
     "container:build": "docker build . -t coreyauger/lovebomb-cloudrun-instagram:$npm_package_version",
     "container:push": "docker push coreyauger/lovebomb-cloudrun-instagram:$npm_package_version"
   },
   "dependencies": {
     "dotenv": "^9.0.2",
     "instagram-web-api": "^2.2.2",
+    "postgresql-client": "^1.18.1",
     "rxjs": "^7.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.13.1",
     "@types/node": "^16.7.1",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "eslint": "^7.24.0",
+    "playwright": "1.13.1",
     "typescript": "^4.1.3"
   }
 }
