@@ -25,6 +25,8 @@ const login = async (page) => {
   await page.click("button[type=submit]");
 };
 
+const harvest = "calvinklein"
+
 test.describe("website user signin feature", () => {
   test.beforeEach(async ({ page }) => {});
 
@@ -34,9 +36,9 @@ test.describe("website user signin feature", () => {
     await db.createTables();
     await login(page);
     await sleep(5000);
-    await page.goto("https://www.instagram.com/justinbieber/");
-    await page.waitForSelector("a[href='/justinbieber/followers/']");
-    await page.click("a[href='/justinbieber/followers/']");
+    await page.goto(`https://www.instagram.com/${harvest}/`);
+    await page.waitForSelector(`a[href='/${harvest}/followers/']`);
+    await page.click(`a[href='/${harvest}/followers/']`);
     for (let i = 2; ; i++) {
       console.log("wait for selector");
       const selector = `img[data-testid='user-avatar'] >> nth=${i}`;
@@ -48,8 +50,9 @@ test.describe("website user signin feature", () => {
       );
       await scrollOnElement(page, selector);
       console.log(`**username[${i}]`, username);
+      db.addUsername(username)
       // TODO: store the username in postgress
-      await sleep(500);
+      await sleep(100);
     }
   });
 });

@@ -1,5 +1,7 @@
 import Instagram from "instagram-web-api";
 import dotenv from "dotenv";
+import { Database } from "./database";
+import { exit } from "process";
 
 const config = dotenv.config();
 console.log("config", config);
@@ -45,32 +47,31 @@ const massUnfollow = async (userId: string): Promise<number> => {
 };
 
 (async () => {
-  console.log("username:", username);
+  const db = new Database();console
+  await db.connect();
+  await db.createTables();
+
+  //console.log("username:", username);
   const user = await client.login();
   console.log("user", user);
-  //const profile = await client.getProfile();
-  //console.log("profile: ",profile);
-  //const coreyauger = await client.getUserByUsername({ username: 'coreyauger' })
-  //console.log("coreyauger", coreyauger)
-
-  const unfollowed = await massUnfollow(user.userId);
-  console.log("unfollowed", unfollowed);
-  /*
-  const lovebombs = await client.getPhotosByHashtag({ hashtag: "lovebomb" });
-  lovebombs.hashtag.edge_hashtag_to_media.edges.map(async (post: any) => {
-    console.log(post);
-    console.log(post.node.owner);
-    const media = await client.getMediaByShortcode({
-      shortcode: post.node.shortcode,
-    });
-
-    console.log("**", media);
-        
-    const owner = await client.getUserByUsername({
-      username: media.owner.username,
-    });
-
-    console.log("~~", owner);    
-  });
-  */
+  for(;;){
+    const nextFollowQuery = await db.getNextUserToFollow()
+    if(!nextFollowQuery.rows)throw new Error("All out of rows")
+    const nextFollow = nextFollowQuery.rows[0]   
+    const username = nextFollow[0]
+    console.log("follow", username)
+    try{
+      const follow = await client.getUserByUsername({username})
+      db.updateUserId(username, follow.userId)
+      await client.follow({userId: follow.userId})
+      await db.followUser(username)
+    }catch(err){
+      console.error("**e1", err)
+    }
+    console.log("SUCCCESSSS")
+    exit(1)
+  }
+  //const unfollowed = await massUnfollow(user.userId);
+ // console.log("unfollowed", unfollowed);
+  
 })();

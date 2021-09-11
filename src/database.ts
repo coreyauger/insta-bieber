@@ -5,7 +5,7 @@ export class Database {
 
   constructor() {
     this.connection = new Connection(
-      "postgresql://coreyauger:password@localhost/insta"
+      "postgresql://coreyauger:postgres@localhost/insta"
     );
   }
 
@@ -43,16 +43,30 @@ export class Database {
 
   getNextUserToFollow = async () => {
     return await this.connection.query(
-      `SELECT * FROM public.Followers WHERE followed_on = NULL LIMIT 1;`
+      `SELECT * FROM public.Followers WHERE followed_on is NULL LIMIT 1;`
     );
   };
 
   unfollowUser = async (username: string) => {
     return await this.connection.query(
-      `UPDATE public.Followers SET unfollowed_on = EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) WHERE username = $2;`,
+      `UPDATE public.Followers SET unfollowed_on = EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) WHERE username = $1;`,
       { params: [username] }
     );
   };
+
+  followUser = async (username: string) => {
+    return await this.connection.query(
+      `UPDATE public.Followers SET followed_on = EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) WHERE username = $1;`,
+      { params: [username] }
+    );
+  };
+
+  deleteUser = async (username: string) => {
+    return await this.connection.query(
+      `DELETE FROM public.Followers WHERE username = $1;`,
+      { params: [username] }
+    );
+  }
 
   getNextUserToUnfollow = async () => {
     const oneWeekMs = 7 * 24 * 60 * 60 * 1000;

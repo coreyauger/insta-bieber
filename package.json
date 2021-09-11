@@ -12,6 +12,7 @@
     "start": "node ./dist/index.js",
     "lint": "eslint src/**/*.ts",
     "unfollow": "npx playwright test tests/mass-unfollow.spec.ts --max-failures 3 --workers 1 --headed",
+    "follow": "npx playwright test tests/follow.spec.ts --max-failures 3 --workers 1 --headed",
     "harvest": "npx playwright test tests/harvest.spec.ts --max-failures 3 --workers 1 --headed",
     "container:build": "docker build . -t coreyauger/lovebomb-cloudrun-instagram:$npm_package_version",
     "container:push": "docker push coreyauger/lovebomb-cloudrun-instagram:$npm_package_version"
