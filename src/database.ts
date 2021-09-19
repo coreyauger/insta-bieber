@@ -43,7 +43,7 @@ export class Database {
 
   getNextUserToFollow = async () => {
     return await this.connection.query(
-      `SELECT * FROM public.Followers WHERE followed_on is NULL LIMIT 1;`
+      `SELECT * FROM public.Followers WHERE followed_on is NULL and unfollowed_on is NULL LIMIT 1;`
     );
   };
 
@@ -71,8 +71,8 @@ export class Database {
   getNextUserToUnfollow = async () => {
     const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
     return await this.connection.query(
-      `SELECT * FROM public.Followers WHERE followed_on < $1 AND unfollowed_on = NULL LIMIT 1;`,
-      { params: [new Date().getTime() - oneWeekMs] }
+      `SELECT * FROM public.Followers WHERE followed_on < $1 AND unfollowed_on is NULL LIMIT 1;`,
+      { params: [ Math.round( ((new Date().getTime()) - oneWeekMs) / 1000)] }
     );
   };
 }

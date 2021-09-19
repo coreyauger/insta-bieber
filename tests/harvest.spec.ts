@@ -25,7 +25,7 @@ const login = async (page) => {
   await page.click("button[type=submit]");
 };
 
-const harvest = "calvinklein"
+const harvest = "lululemon"
 
 test.describe("website user signin feature", () => {
   test.beforeEach(async ({ page }) => {});

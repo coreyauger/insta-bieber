@@ -16,6 +16,10 @@ async function scrollOnElement(page, selector) {
     element.scrollIntoView();
   });
 }
+function isNumber(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
 
 const login = async (page) => {
   await page.goto("https://www.instagram.com/accounts/login/");
@@ -26,6 +30,113 @@ const login = async (page) => {
 };
 
 let iters = 0;
+
+
+const tryFollow = async (page, db): Promise<boolean> => {
+  const nextFollowQuery = await db.getNextUserToFollow()
+  if(!nextFollowQuery.rows)throw new Error("All out of rows")
+  const nextFollow = nextFollowQuery.rows[0]   
+  const username = nextFollow[0]
+  console.log("follow", username)
+  try{
+    await page.goto(`https://www.instagram.com/${username}/`);
+    try{
+      await page.waitForSelector(`h2:has-text("Error")`, { timeout: 1000 })
+      console.log("Going to sleep!!!")
+      await sleep(130000);
+      return true;
+    }catch(e){}
+    try{
+      await page.waitForSelector(`h2:has-text("Sorry, this page isn't available.")`, { timeout: 1000 })
+      await db.deleteUser(username)
+      return true
+    }catch(e){
+      console.log("Page should be available")
+    }        
+    try{
+      const fullText = await page.evaluate( (el: any) => el.innerText, await page.waitForSelector(`span:text-matches(" post\\s*", "i")`, { timeout: 2500 }))     
+      const maybeNum = fullText.split(" ")[0].replace(",","")
+      if(!isNumber(maybeNum)){
+        console.log("something wrong.. waiting and then skip")
+        await sleep(10000)
+        return true;
+      }
+      const numPosts = parseInt(maybeNum)
+      console.log("numPosts", numPosts)   
+      if(Number.isNaN(numPosts) || numPosts < 15){
+        // only follow people with more than 15 posts
+        db.unfollowUser(username)
+        return true;
+      }             
+    }catch(e){
+      console.log("found problem", e)
+      return true;
+    }
+    await page.waitForSelector(`button:has-text(\"Follow\")`);
+    await page.click(`button:has-text(\"Follow\")`);
+    await sleep(10000);
+    //await page.reload()
+
+    await db.followUser(username)
+    if(iters++ > 1000)return false
+    console.log("iters", iters)
+  }catch(err){
+    console.error("**e1", err)
+    console.log("Doing the big wait for API refresh.")
+    await sleep(130000);
+  }  
+  return true;    
+}
+
+
+
+const tryUnFollow = async (page, db): Promise<boolean> => {
+  const nextFollowQuery = await db.getNextUserToUnfollow()
+  if(!nextFollowQuery.rows){
+    console.log("Nobody in the unfollow state")
+    return true;
+  }
+  const nextFollow = nextFollowQuery.rows[0]   
+  const username = nextFollow[0]
+  console.log("unfollow", username)
+  try{
+    await page.goto(`https://www.instagram.com/${username}/`);
+    try{
+      await page.waitForSelector(`h2:has-text("Error")`, { timeout: 1000 })
+      console.log("Going to sleep!!!")
+      await sleep(130000);
+      return true;
+    }catch(e){}
+    try{
+      await page.waitForSelector(`h2:has-text("Sorry, this page isn't available.")`, { timeout: 1000 })
+      await db.deleteUser(username)
+      return true
+    }catch(e){
+      console.log("Page should be available")
+    } 
+    try{
+      await page.waitForSelector(`button:has-text(\"Follow\")`, { timeout: 1000 });
+      console.log("**** UN1")
+      await db.unfollowUser(username)    
+      return true
+    }catch(e){
+    }
+    await page.waitForSelector('css=[aria-label="Following"]');          
+    await page.click('css=[aria-label="Following"]');          
+    await page.waitForSelector(`button:has-text(\"Unfollow\")`);
+    await page.click(`button:has-text(\"Unfollow\")`);
+    await sleep(10000);
+    console.log("**** UN2")
+    await db.unfollowUser(username)    
+  }catch(err){
+    console.error("**e1", err)
+    console.log("Doing the big wait for API refresh.")
+    await sleep(130000);
+  }  
+  return true;    
+}
+
+const threeMinutes = 180 * 1000
 
 test.describe("website user signin feature", () => {
   test.beforeEach(async ({ page }) => {});
@@ -39,42 +150,12 @@ test.describe("website user signin feature", () => {
 
 
 
-  for(;;){
-      const nextFollowQuery = await db.getNextUserToFollow()
-      if(!nextFollowQuery.rows)throw new Error("All out of rows")
-      const nextFollow = nextFollowQuery.rows[0]   
-      const username = nextFollow[0]
-      console.log("follow", username)
-      try{
-        await page.goto(`https://www.instagram.com/${username}/`);
-        try{
-          await page.waitForSelector(`h2:has-text("Sorry, this page isn't available.")`, { timeout: 5000 })
-          await db.deleteUser(username)
-          continue
-        }catch(e){
-          console.log("Page should be available")
-        }
-
-        const fullText = await page.evaluate( (el: any) => el.innerText, await page.waitForSelector(`span:has-text(\" posts\")`))     
-        const numPosts = parseInt(fullText.split(" ")[0])
-        console.log("numPosts", numPosts)   
-        if(numPosts < 50){
-          // only follow people with more than 50 posts
-          db.unfollowUser(username)
-          continue;
-        }             
-        await page.waitForSelector(`button:has-text(\"Follow\")`);
-        await page.click(`button:has-text(\"Follow\")`);
-        await sleep(10000);
-        await page.reload()
-
-        await db.followUser(username)
-        if(iters++ > 2000)break
-        console.log("iters", iters)
-      }catch(err){
-        console.error("**e1", err)
-        await sleep(130000);
-      }      
+    for(;;){
+      await tryFollow(page, db)
+      await tryUnFollow(page, db)
+      const noise = Math.random() * threeMinutes
+      console.log("noise sleep seconds", noise / 1000)
+      await sleep(noise)
     }
   });
 
